@@ -11,10 +11,8 @@ from collections import Counter
 #os.system("ipcluster start -n 8 &")   
 #os.system("ipcluster stop  &")
 
-
 binId = lambda : None
 bin_size=-1
-
 chrms = []
 chrms_flat = []
 chrms_length = {}
@@ -26,37 +24,30 @@ def init(bin_size_local):
     global chrms_stat, chrms, chrms_flat    
 
     bin_size = bin_size_local
-    binId = lambda x: int(x/bin_size)   
-    
+    binId = lambda x: int(x/bin_size) 
     chrms_length_file_name = "./" + "hg19_chrms_length"
     chrms_length = {}
+    chrms=[]
+    chrms_flat=[] 
     
     with open(chrms_length_file_name, 'r') as chrms_length_file:
         for i, l in enumerate(chrms_length_file):
             ln = l.rstrip().split("\t")
-            chrms_length[ln[0]] = int(ln[1])    
-
-    chrms=[]
-    chrms_flat=[]
+            chrms_length[ln[0]] = int(ln[1])   
     
-    tmp=[]
     for j in range (0, 5):    
         tmp=[]
         for i in range (1, 5):
             tmp.append('chr' + str(j*4 + i))
         chrms.append(tmp)
     
-    tmp=[]      
-    
+    tmp=[]   
     tmp.append('chr21')
     tmp.append('chr22')
     tmp.append('chrX')
     tmp.append('chrY')
-    chrms.append(tmp)
-    
+    chrms.append(tmp)    
     chrms_flat=[chr for tmp in chrms for chr in tmp]
-
-
 #
 #
 def load_stat(fl_in):
@@ -66,8 +57,7 @@ def load_stat(fl_in):
     with open(fl_in, 'r') as tab_fl:
         for i, l in enumerate(tab_fl):
             ln = l.rstrip().split("\t")
-            if len(ln)>2:
-                
+            if len(ln)>2:                
                 chrms_stat[ln[0]] = [chrms_length[ln[0]], binId(chrms_length[ln[0]]), int(ln[2])]
     
     for chr in chrms_flat:
@@ -82,8 +72,7 @@ def bg_create_binned_profiles(track_name, annotation_table_file, background_file
     chrs = {} 
     reads_count = 0
     annot = open(annotation_table_file, 'r')
-    bg = open(background_file, 'w+')
-    
+    bg = open(background_file, 'w+')    
     bg.write("track type=bedGraph name=\"bg_" \
              + track_name + "\"description=\"bg track " \
              + track_name + " binned\"\n")         
@@ -92,36 +81,27 @@ def bg_create_binned_profiles(track_name, annotation_table_file, background_file
         chrs[chr] = collections.defaultdict(list)
         
     for line in annot:
-        ln = line.rstrip().split("\t")
-        
+        ln = line.rstrip().split("\t")        
         assert len (ln)==24, \
                "Warning: create_binnded_background_from_annot_tables \
-               length of the input line is less than 24 elements %r" % ln
-        
+               length of the input line is less than 24 elements %r" % ln        
         if ln[11]!="protein_coding":
-            continue
-        
+            continue        
         if ln[7]==ln[13]:
-            continue
-        
+            continue        
         chr = ln[13]      
         bin1 = binId(int(ln[14]))        
         reads_count+=1        
         if bin1 in chrs[chr]:
             chrs[chr][bin1]+=1
         else:
-            chrs[chr][bin1] = 1            
-    
-    print reads_count
-    
+            chrs[chr][bin1] = 1     
+ 
     for chr in chrms_flat:
-        #print chr ,
-        #print len(chrs[chr].keys())
         for bn in sorted(chrs[chr].keys()):            
             bg.write(chr + "\t" + str(bn * bin_size) \
                      + "\t" + str(bn * bin_size+bin_size) 
-                     + "\t" + str(chrs[chr][bn]) + "\n")
-    
+                     + "\t" + str(chrs[chr][bn]) + "\n")    
     bg.close()
     annot.close()
 
@@ -156,26 +136,18 @@ def bg_normalize(fl_in, fl_norm_genome_mean_out,
     for l in bg:
         ln=l.rstrip().split("\t")  
         if "bedGraph" in l:
-            continue
-                    
+            continue                    
         if ln[0] in chrms_sum:
-            #if int(ln[2]) > chrms_max[ln[0]]:
-                #chrms_max[ln[0]]=int(ln[2]) 
             chrms_sum[ln[0]]+=int(ln[3]) 
             chrms_filled[ln[0]]+=1
         else:
-            #chrms_max[ln[0]]=int(ln[2]) 
             chrms_sum[ln[0]]=int(ln[3])    
-            chrms_filled[ln[0]]=1
-        
+            chrms_filled[ln[0]]=1        
         
         if ln[0] in chrms_length and ln[0] not in chrms_max:
             chrms_max[ln[0]]=chrms_length[ln[0]]
         elif ln[0] not in chrms_length:
-            print "Warning: simple_normalization_for_bg chr not in chrm_length dict " + ln[0]
-            
-    #print chrms_length
-    #print chrms_max
+            print "Warning: simple_normalization_for_bg chr not in chrm_length dict " + ln[0]   
     
     print 'chr chrm_sum_signal chrms_filled_bins chrm_length chrm_mean' 
     for chr in sorted(chrms_sum.keys()):
@@ -216,15 +188,13 @@ def bg_normalize(fl_in, fl_norm_genome_mean_out,
             continue
         ln = l.rstrip().split("\t") 
         bin1 = binId(int(ln[1]))
-        bin2 = binId(int(ln[2]))
-        
+        bin2 = binId(int(ln[2]))        
         if chr=="" or prev_chrm!=ln[0]:
             chr = ln[0]
             for i in range (1, bin1 + 1):
                 bg_norm_genome_mean.write(ln[0] + "\t" + str( bin_size*(i-1)) + "\t" + str(bin_size*(i)) + "\t" + "0\n")
                 bg_norm_chrm_mean.write(ln[0] + "\t" + str( bin_size*(i-1)) + "\t" + str(bin_size*(i)) + "\t" + "0\n")
-                bg_norm_no.write(ln[0] + "\t" + str( bin_size*(i - 1)) + "\t" + str(bin_size * (i)) + "\t" + "0\n")
-                
+                bg_norm_no.write(ln[0] + "\t" + str( bin_size*(i - 1)) + "\t" + str(bin_size * (i)) + "\t" + "0\n")                
         if  ln[0]==chr :
             for i in range (1, 1 + bin1 - prev_end):
                 bg_norm_genome_mean.write(ln[0] + "\t"+ str(prev_end * bin_size + bin_size*(i - 1)) \
@@ -243,8 +213,7 @@ def bg_normalize(fl_in, fl_norm_genome_mean_out,
                 bg_norm_no.write(ln[0] + "\t" + str(bin1 * bin_size + bin_size * (i - 1)) \
                                  + "\t" + str(bin1 * bin_size + bin_size * (i)) + "\t" + str(ln[3]) + "\n") 
         prev_end = bin2
-        prev_chrm = ln[0]         
-
+        prev_chrm = ln[0]     
         
     bg.close()
     bg_norm_genome_mean.close()
@@ -252,14 +221,11 @@ def bg_normalize(fl_in, fl_norm_genome_mean_out,
     bg_norm_no.close() 
     bg_stat.close()
 
-
 #
 #
 def core_bg_smooth_with_window(lines_list, chr, smoothed):
-    lines = np.asarray(lines_list, dtype=object)  
-
-    proximity = [ float(x) for x in lines[0:11,3] ] 
-    
+    lines = np.asarray(lines_list, dtype=object) 
+    proximity = [ float(x) for x in lines[0:11,3] ]     
     for j in range(len(lines)):
         if j<=5:
             mn = np.mean(proximity)
@@ -268,11 +234,9 @@ def core_bg_smooth_with_window(lines_list, chr, smoothed):
         else:    
             del proximity[0]
             proximity.append(float(lines[j+5][3]))    
-            mn = np.mean(proximity)                            
-            
+            mn = np.mean(proximity)    
         smoothed.write(lines[j][0] + "\t" + lines[j][1] + "\t" + lines[j][2] + "\t" +str(mn) + "\n")   
-    del lines
-    
+    del lines    
 #
 # smooth bg with 11-bin window
 def bg_smooth_with_window(fl_bg, fl_bg_smoothed):
@@ -294,10 +258,8 @@ def bg_smooth_with_window(fl_bg, fl_bg_smoothed):
                 gc.collect()                    
                 lines_list = []
                 lines_list.append(ln)
-        core_bg_smooth_with_window(lines_list,chr, smoothed) 
-           
+        core_bg_smooth_with_window(lines_list,chr, smoothed)            
     smoothed.close()    
-
 #
 # filter annotation tabel files
 def rna_filter(file_in, file_out, mask, name):
@@ -316,11 +278,9 @@ def rna_filter(file_in, file_out, mask, name):
     print "mask = " ,
     print mk
     for ln in fl_in:
-        lna = ln.rstrip().split("\t")
-        
+        lna = ln.rstrip().split("\t")        
         if lna[11]=='chr19' and int(ln[12])==27738479:            
-            continue
-        
+            continue        
         if mask=='name' and lna[12]==name :
             fl_out.write(ln)
         if mask == 'pc' and 'protein_coding' in ln:
@@ -331,8 +291,7 @@ def rna_filter(file_in, file_out, mask, name):
             fl_out.write(ln)
         if 'region' in mask:
             if lna[0]==chr and int(lna[1])>=start and int(lna[2])<=end:
-                fl_out.write(ln)
-            
+                fl_out.write(ln)            
     fl_in.close()
     fl_out.close()
 #
@@ -365,24 +324,15 @@ def rna_calculate_coverage(fl_annot_tab, fl_out):
             track_name = fl_out.split(".bedGraph")[0]
         else:
             track_name = ""
-            print "Warning: normalize_single_rna problem with track name"  
-        
-        rna_bin.write("track type=bedGraph name=\"" + track_name + "\"description=\"" + track_name + "\"\n")                                            
-        #rna_bin.write("track type=bedGraph name=\" " +fl_out.split(".bedGraph")[0] + " \"description=\" track " + fl_out.split(".bedGraph")[0] + " \"\n")                                            
-      
+            print "Warning: normalize_single_rna problem with track name"         
+        rna_bin.write("track type=bedGraph name=\"" + track_name + "\"description=\"" + track_name + "\"\n")   
         for chr in sorted(rna.keys()):
             for bin in sorted(rna[chr].keys()):
                 if (bin+1)*bin_size > chrms_stat[chr][0] : 
-                    #print chr ,
-                    #print chrms_stat[chr][0] ,
-                    #print (bin+1)*bin_size
-                    #end = chrms_stat[chr][0]
                     end = (bin+1)*bin_size
                 else:
                     end = (bin+1)*bin_size 
-                #rna_bin.write(chr+"\t"+str(bin*bin_size) +"\t"+ str((bin+1)*bin_size ) +"\t"+ str(rna[chr][bin]) + "\n")
-                rna_bin.write(chr+"\t"+str(bin*bin_size) +"\t"+ str(end) +"\t"+ str(rna[chr][bin]) + "\n")
-                
+                rna_bin.write(chr+"\t"+str(bin*bin_size) +"\t"+ str(end) +"\t"+ str(rna[chr][bin]) + "\n")                
 #
 # normalize rna coverage
 def rna_normalize(fl_rna_binned, fl_rna_norm):
@@ -396,20 +346,14 @@ def rna_normalize(fl_rna_binned, fl_rna_norm):
                 continue
             if ln[0] not in rna: rna[ln[0]] = []
             rna[ln[0]].append(ln)
-            total_coverage.append(float(ln[-1]))
-    
+            total_coverage.append(float(ln[-1]))    
     print 'total coverage ',
-    print sum(total_coverage)    
-    
-    
-    number_of_bins = sum(chrms_stat[chr][1] for chr in chrms_stat)
-    
-    #print chrms_stat
+    print sum(total_coverage)      
+    number_of_bins = sum(chrms_stat[chr][1] for chr in chrms_stat)    
     mean_total = sum(total_coverage)/(number_of_bins*1.0)
     
     print 'mean by all bins in the genome',
-    print mean_total
-    
+    print mean_total    
     
     print 'mean by only filled bins ',
     mean_filled = np.mean(total_coverage)    
@@ -423,18 +367,10 @@ def rna_normalize(fl_rna_binned, fl_rna_norm):
         else:
             track_name = ""
             print "Warning: normalize_single_rna problem with track name"  
-        rna_norm.write("track type=bedGraph name=\"" + track_name + "\"description=\"" + track_name + "\"\n")                                            
-        
+        rna_norm.write("track type=bedGraph name=\"" + track_name + "\"description=\"" + track_name + "\"\n")  
         for chr in sorted(rna.keys()):
             for ln in rna[chr]:                
                 rna_norm.write(chr+"\t"+str(int(ln[1])) +"\t"+ str(int(ln[2])) +"\t"+ str((float(ln[3])*1.0)/mean_total) + "\n")
-    
-    
-    
-
-
-
-
 #
 # calculate fold enrichment
 def rna_calculate_fold_enrichment(fl_bg, fl_rna, fl_out):
@@ -445,22 +381,13 @@ def rna_calculate_fold_enrichment(fl_bg, fl_rna, fl_out):
         track_name = fl_out.split(".bedGraph")[0]
     else:
         track_name = ""
-        print "Warning: normalize_single_rna problem with track name"  
-    
-    fold_enrichment.write("track type=bedGraph name=\"" +track_name + "\"description=\"" + track_name + "\"\n")                                             
-
-    '''
-    fold_enrichment.write("track type=bedGraph name=" )
-    track_name = fl_out.split("_")[0]+"_"+fl_out.split("_")[1]
-    fold_enrichment.write(track_name)
-    fold_enrichment.write(" description = \"decription\" autoScale=on viewLimits=0.0:25.0\n")
-    '''
+        print "Warning: normalize_single_rna problem with track name"      
+    fold_enrichment.write("track type=bedGraph name=\"" +track_name + "\"description=\"" + track_name + "\"\n")    
     bg = {}
     eps = 0.0001
     total_coverage = []
     with open(fl_bg, 'r') as f_bg:
         for i, l in enumerate(f_bg):
-
             ln = l.rstrip().split("\t")         
             if ln[0] not in bg: bg[ln[0]] = {}
             bg[ln[0]][int(ln[1])] = float(ln[-1])
@@ -472,11 +399,9 @@ def rna_calculate_fold_enrichment(fl_bg, fl_rna, fl_out):
             if len(ln)<4:
                 print "Warning: calculate_fold_enrichment_for_single_RNA short line " + l
                 continue            
-            #bin1 =  int(ln[1]) if int(ln[1]) % bin_size ==0 else int(ln[1])-1
             bin1 = int(ln[1])
             if ln[0] not in rna: rna[ln[0]] = {}
             if bin1 not in rna[ln[0]] : rna[ln[0]][bin1] = []
-            #rna[ln[0]][bin1].append(float(ln[-1]))
             if bin1 not in bg[ln[0]]: 
                 print "Warning: calculate_fold_enrichment_for_single_RNA bin not in bg"
                 print ln[0] + "\t" + str(bin1) 
@@ -484,18 +409,14 @@ def rna_calculate_fold_enrichment(fl_bg, fl_rna, fl_out):
             fold = (float(ln[-1]))/(bg[ln[0]][bin1]) if bg[ln[0]][bin1]!=0  else (-1) * float(ln[-1])
             if bg[ln[0]][bin1]==0:
                 count_zeros+=1
-            #rna[ln[0]][bin1].append(fold)
             fold_enrichment.write(ln[0] + "\t" + ln[1] + "\t" +ln[2] + "\t" +str(fold) + "\n")
     print 'zeros ',        
     print count_zeros
-    fold_enrichment.close()
-    
-
+    fold_enrichment.close()   
 #
 # filter fold enrichment
 def rna_filter_fold_enrichment(fl_RNA, fl_out):
-    filtered = open(fl_out,"w+")
-   
+    filtered = open(fl_out,"w+")   
     if ".tab" in fl_out:
         track_name = fl_out.split(".tab")[0]
     elif ".bedGraph" in fl_out:
@@ -528,83 +449,54 @@ def rna_filter_fold_enrichment(fl_RNA, fl_out):
             if count >=3:
                 filtered.write(ln[0]+"\t"+ ln[1]+"\t"+ ln[2]+"\t"+ ln[3]+"\n")
     filtered.close()
-       
-         
-
-
-
-
 #
 #
 def core_rna_smooth_with_window(lines_list, chr, smoothed):
     lines = np.asarray(lines_list, dtype=object)  
-    checked_bins = []
-    
+    checked_bins = []    
     for i, ln in enumerate(lines):
         bin = binId(int(ln[1]))
         proximity1 = [0] * 11
         proximity2 = [0] * 11
         proximity3 = [0] * 11
-        #if binId(int(ln[1]))>=5 and binId(int(ln[1])) < chrms_stat[ln[0]][1] -5:    
         for j in range(-5,6):
             if i+j>=0 and i+j<len(lines) and abs(binId(int(lines[i+j][1])) - binId(int(ln[1])))<=5:
                 proximity1[5 + binId(int(lines[i + j][1])) - binId(int(ln[1]))] = (float(lines[i + j][3])) 
                 proximity2[5 + binId(int(lines[i + j][1])) - binId(int(ln[1]))] = (float(lines[i + j][3])) 
                 proximity3[5 + binId(int(lines[i + j][1])) - binId(int(ln[1]))] = (float(lines[i + j][3])) 
-        mn2 = np.mean(proximity2)              
-                                       
+        mn2 = np.mean(proximity2)     
         tmp = {}                  
         for k in range(-1,-6, -1): 
             del proximity1[-1]
             proximity1 = [0.0] + proximity1
-            #if bin==36182:
-                #print proximity1
             mn1 = np.mean(proximity1)
-            tmp[k] = mn1
-            
+            tmp[k] = mn1            
         for k in range(-5,0, +1):            
             if bin + k not in checked_bins and bin+k>=0:
                 smoothed.write(ln[0] + "\t" + str((bin + k) * bin_size) \
                                + "\t" + str((bin + k + 1) * bin_size) + "\t" + str(tmp[k]) + "\n")
-                checked_bins.append(bin + k)          
-        #
-        #  
+                checked_bins.append(bin + k)  
         if bin not in checked_bins:
             smoothed.write(ln[0] + "\t" + ln[1] + "" + "\t" + ln[2] + "\t" + str(mn2) + "\n")     
-        checked_bins.append(bin)            
-        #
-        #          
+        checked_bins.append(bin)
         for k in range(1,6):
             del proximity3[0]
             found = 0
             for m in range(0, 11):
-                #if i+m<len(lines) and bin+5<=binId(int(lines[i+m][1])) and bin+k+5>=binId(int(lines[i+m][1])):
                 if i + m<len(lines) and bin + 5 + k==binId(int(lines[i + m][1])):
                     proximity3.append(float(lines[i + m][3])) 
                     found = 1   
                     break
             if found==0:
-                proximity3.append(0.0)  
-                
+                proximity3.append(0.0)                  
             if bin + k not in checked_bins and bin + k <= binId(chrms_length[ln[0]]):
                 mn3 = np.mean(proximity3) 
-                tmp_count = 0
-                if ln[0]=='chr10' and ((bin+k)*bin_size==1700000 
-                                       or (bin+k)*bin_size==700000 
-                                       or (bin+k)*bin_size==5800000):
-                    #print (bin+k)*bin_size
-                    #print proximity3
-                    tmp_count+=1
-                    if tmp_count==3:
-                        return
+                tmp_count = 0                
                 smoothed.write(ln[0] + "\t" + str((bin+k)*bin_size) + "\t" + str((bin+k+1)*bin_size) + "\t" +str(mn3) + "\n")                
-                checked_bins.append(bin+k)              
-            
+                checked_bins.append(bin+k)   
             if i+1 <len(lines) and bin+k+1 == binId(int(lines[i+1][1])) :
                 break            
-    del lines
-    
-   
+    del lines   
 #
 # smooth rna profile with 11-bin window
 def rna_smooth_with_window(fl_rna, fl_rna_smoothed):
@@ -616,8 +508,7 @@ def rna_smooth_with_window(fl_rna, fl_rna_smoothed):
     else:
         track_name = ""
         print "Warning: normalize_single_rna problem with track name"  
-    smoothed.write("track type=bedGraph name=\"" + track_name + "\" description=\"" + track_name + "\"\n")                                             
-       
+    smoothed.write("track type=bedGraph name=\"" + track_name + "\" description=\"" + track_name + "\"\n")     
     lines_list = []
     chr = ""
     checked_bins = []
@@ -630,8 +521,7 @@ def rna_smooth_with_window(fl_rna, fl_rna_smoothed):
                 continue
             if chr=="":
                 chr = ln[0]
-                lines_list.append(ln)
-                
+                lines_list.append(ln)                
             elif ln[0]==chr:
                 lines_list.append(ln)
             else:
@@ -656,13 +546,11 @@ def correct_last_bin_chmrs_end(fl_in_name, fl_out_name):
                 fl_out.write(l)
             if len (ln)<4:
                 print "Warning: correct_last_bin_chmrs_end short line " + l
-                continue  
-            
+                continue              
             if int(ln[2]) > chrms_length[ln[0]]:
                 fl_out.write(ln[0]+ "\t" + ln[1] + "\t" + str(chrms_length[ln[0]]) + "\t" + ln[3] + "\n")
             else:
-                fl_out.write(l)
-    
+                fl_out.write(l)    
 #
 #
 def Workflow():    
@@ -754,9 +642,6 @@ def Workflow():
                                                            
                 correct_last_bin_chmrs_end(cline + "." + rna + ".binned" + str(bin_size_local) + ".normalized.FE.filtered.smoothed.tab", 
                                            cline + "." + rna + ".binned" + str(bin_size_local) + ".normalized.FE.filtered.smoothed.corrected.tab")                 
-                
-
-
-
+ 
 Workflow()
 
