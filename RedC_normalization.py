@@ -15,8 +15,7 @@ binId = lambda : None
 bin_size=-1
 chrms = []
 chrms_flat = []
-chrms_length = {}
-    
+chrms_length = {}    
 
 def init(bin_size_local):
     global bin_size, binId
@@ -104,7 +103,6 @@ def bg_create_binned_profiles(track_name, annotation_table_file, background_file
                      + "\t" + str(chrs[chr][bn]) + "\n")    
     bg.close()
     annot.close()
-
 #
 # normalize background
 def bg_normalize(fl_in, fl_norm_genome_mean_out, 
@@ -220,7 +218,6 @@ def bg_normalize(fl_in, fl_norm_genome_mean_out,
     bg_norm_chrm_mean.close()
     bg_norm_no.close() 
     bg_stat.close()
-
 #
 #
 def core_bg_smooth_with_window(lines_list, chr, smoothed):
